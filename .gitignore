@@ -1,5 +1,4 @@
 venv/
-ml-1m/
 __pycache__/
 *.pyc
 .DS_Store
