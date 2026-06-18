@@ -1,0 +1,273 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║         NBCF FINAL PROJESİ — BİLGİ VE DEĞİŞİKLİK RAPORU           ║
+║   Ömer MANAV (210209003) — Kaan Bahadır SAĞRA (210201011)          ║
+║   Danışman: Gamze USLU, Ph.D.    Tarih: Haziran 2026               ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+Bu belge üç amaca hizmet eder:
+  1. Midterm ile final arasında neler değişti ve neden?
+  2. Her değişiklik sistemi nasıl etkiledi?
+  3. Report_1, Report_2 ve Report_3 ne içeriyor?
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BÖLÜM 1 — PROJE NEDİR? (GENEL BAKIŞ)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Proje, Naïve Bayes Collaborative Filtering (NBCF) algoritmasını MovieLens-1M
+veri seti üzerinde uygular. Sistem, bir kullanıcının henüz izlemediği bir
+filme kaç puan vereceğini (1–5 arası) tahmin eder.
+
+Temel fikir:
+  - Kullanıcı u, film i'yi kaç puan verir?
+  - Geçmişte u'nun izlediği filmler ile i'yi izleyen diğer kullanıcıların
+    geçmişini karşılaştırarak Bayes teoremi ile olasılık hesapla.
+  - En yüksek olasılıklı sınıfı tahmin olarak döndür.
+
+Veri seti:
+  - 6,040 kullanıcı, 3,701 film, 1,000,209 puan
+  - %95.53 boşluk oranı (çoğu kullanıcı-film çifti için puan yok)
+  - Zaman damgaları 2000–2003 yılları arası
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BÖLÜM 2 — MİDTERM'DEN FİNALE DEĞİŞİKLİKLER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── DEĞİŞİKLİK 1: TOP-K KOMŞU SEÇİMİ ──────────────────────────────
+
+  Midterm'de ne vardı:
+    Her tahmin yapılırken kullanıcının geçmişteki TÜM filmleri (UB için)
+    veya filmin TÜM birlikte puanlayıcıları (IB için) kullanılıyordu.
+    Popüler bir film 2000+ kişi tarafından izlenmiş olabilir; bunların
+    büyük çoğunluğu hedef kullanıcıyla ortak film izlememişse sıfır
+    bilgi taşır ama yine de hesaplamaya katılır.
+
+  Finalde ne değişti:
+    Komşuları puanlamadan önce "co-rater overlap" ile sıralıyoruz:
+    - UB için: |users(i) ∩ users(j)| — film i ve film j'yi aynı kişiler
+      izlemişse j, i için güçlü kanıt demektir
+    - IB için: |items(u) ∩ items(v)| — kullanıcı u ve v aynı filmleri
+      izlemişse v, u için bilgilendirici demektir
+    En yüksek örtüşmeye sahip K=30 komşu seçilir, gerisi atılır.
+
+  Sisteme etkisi:
+    + HIZLANMA: Tahmin süresi 34.8ms → 14.3ms (%59 düşüş)
+      Sebebi: iç döngü sınırsız → K=30 ile sınırlı
+    + DOĞRULUK (orta aktif kullanıcılar): MAE 0.803 → 0.753 (%6.2 iyileşme)
+      Sebebi: alakasız komşular çıkarıldı, kalan 30 komşu daha bilgilendirici
+    - DOĞRULUK (çok aktif kullanıcılar): MAE 0.740 → 0.777 (hafif kötüleşme)
+      Sebebi: 100+ geçmişi olan kullanıcılarda K=30 bazen faydalı komşuları kesiyor
+    ~ DOĞRULUK (az aktif kullanıcılar): değişmedi
+      Sebebi: zaten 30'dan az geçmişleri var, K hiç devreye girmiyor
+
+── DEĞİŞİKLİK 2: GÜVENİLİRLİK (CONFIDENCE) DÜZELTMESİ ──────────────
+
+  Midterm'de ne vardı:
+    Entropy tabanlı confidence hesabı: conf = 1 - H/log(5)
+    Sonuç: %0 kapsama — tüm tahminlerin güven skoru eşik altında kalıyordu.
+
+  Neden bozuluyordu:
+    Hibrit birleştirme formülü: P_hybrid(y) = P_UB(y)^w_UB × P_IB(y)^w_IB
+    Ağırlıklar: w_UB = 1/(1+25) ≈ 0.04 (25 geçmiş filmi olan kullanıcı için)
+    Herhangi bir p değeri için p^0.04 ≈ 1.0 (sıfıra yakın üs → 1'e yakın sonuç)
+    Tüm 5 sınıf için score ≈ 0.20 → tamamen uniform dağılım → maksimum entropy
+    → confidence = 0
+
+  Finalde ne değişti:
+    Yeni formül: confidence = max_y P(y | u, i)
+    Geometric birleştirme yapılmadan UB-Temporal skor üzerinde hesaplanır.
+    Aralık: [0.2, 1.0] — 0.2 = tamamen belirsiz, 1.0 = kesin tahmin
+
+  Sisteme etkisi:
+    + Kapsama: %0 → %29.3 (τ=0.45 eşiğinde)
+    + Yüksek güvenli tahminlerin MAE'si: 0.706 (genel 0.798'e göre %11.5 daha iyi)
+    → Sistem artık "emin olmadığında" bunu doğru bir şekilde ifade edebiliyor
+
+── DEĞİŞİKLİK 3: RMSE METRİĞİ ─────────────────────────────────────
+
+  Midterm'de ne vardı: Sadece MAE
+  Finalde ne değişti: MAE + RMSE birlikte hesaplanıyor
+
+  RMSE = √( (1/n) × Σ(gerçek - tahmin)² )
+
+  MAE ile farkı: Büyük hatalar kare alındığı için daha ağır cezalandırılır.
+  MAE=0.79 iyi görünse de RMSE=1.12 gösteriyor ki bazı tahminler 2-3 puan
+  yanılıyor. İkisini birlikte raporlamak daha eksiksiz bir resim verir.
+
+  Sisteme etkisi: Algoritmayı değiştirmez; değerlendirmeyi daha kapsamlı yapar.
+
+── DEĞİŞİKLİK 4: KULLANICI GRUBU DEĞERLENDİRMESİ ────────────────────
+
+  Midterm'de ne vardı:
+    Sadece 20-30 puan vermiş kullanıcılar test edildi.
+    Bu, tüm kullanıcıların yalnızca %20'sini temsil ediyor.
+
+  Finalde ne değişti:
+    3 grup: Light (10-30), Medium (31-100), Heavy (>100)
+    Her gruptan 300 örnek test edildi.
+
+  Sisteme etkisi:
+    Cold-start problemi görünür hale geldi:
+    - Light kullanıcılar: MAE ≈ 0.84 (daha az geçmiş = daha zor tahmin)
+    - Heavy kullanıcılar: MAE ≈ 0.74 (daha fazla geçmiş = daha kolay tahmin)
+    Top-K'nın nerede fayda sağladığı, nerede zarar verdiği artık ölçülüyor.
+
+── DEĞİŞİKLİK 5: ALPHA DUYARLILIK ANALİZİ ──────────────────────────
+
+  Midterm'de ne vardı: α=0.01 sabit, hiç sorgulanmadı.
+  Finalde ne değişti: α ∈ {0.001, 0.01, 0.1, 0.5, 1.0} için MAE hesaplandı.
+
+  Bulgular:
+    - UB (temporal yok): α=0.1 civarında en düşük MAE (0.845)
+    - UB+Temporal: α değişince MAE neredeyse hiç değişmiyor (0.855 sabit)
+    → Temporal weighting, smoothing parametresine karşı modeli sağlamlaştırıyor
+
+── GÖRSEL ÇIKTILAR ─────────────────────────────────────────────────
+
+  Midterm:  6 figür, 5 tablo
+  Final:    9 figür, 7 tablo
+
+  Yeni eklenenler:
+    Figure 7 — Kullanıcı grubu MAE/RMSE karşılaştırması
+    Figure 8 — Güven eşiği sweep'i (coverage vs filtered MAE)
+    Figure 9 — Alpha duyarlılık grafiği
+    Table 6  — Kullanıcı grubu sayısal özet
+    Table 7  — Güncellendi: RMSE kolonu + TopK+Temporal satırı eklendi
+    Figure 2 — Güncellendi: artık RMSE de gösteriyor
+    Figure 3 — Güncellendi: 3. model (TopK) eklendi
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BÖLÜM 3 — METRIK KARŞILAŞTIRMASI (ÖZET TABLO)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Model                  MAE      RMSE     F1      Hız(ms)  Coverage
+  ─────────────────────────────────────────────────────────────────────
+  UB (baseline)          0.8610   1.2518   —       —        —
+  IB (baseline)          2.3350   2.6384   —       —        —
+  Hybrid (baseline)      1.1020   1.4953   0.271   28.3ms   —
+  Hybrid + Temporal      0.7920   1.1234   0.279   34.8ms   0% (BOZUK)
+  TopK + Temporal [YENİ] 0.7980   1.1261   0.266   14.3ms   29.3%
+
+  En önemli gelişme: Hız (%59 düşüş) + Confidence onarımı
+  En kritik bulgu: Temporal modelin IB'yi düzeltemediği, UB'nin
+  dominant kaldığı ve Top-K'nın sadece orta aktif kullanıcılarda
+  doğruluk kazanımı sağladığı
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BÖLÜM 4 — REPORT İÇERİKLERİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── REPORT_1_Final.docx ─────────────────────────────────────────────
+  Tam akademik makale formatında. Hocanın istediği 8 bölüm aynen mevcut:
+
+  Abstract       — 150 kelimelik özet: veri seti, yöntem, ana sonuçlar
+  Introduction   — Motivasyon, veri seti detayları, formal problem tanımı,
+                   zorluklar (sparsity, temporal drift, scalability, confidence)
+  Related Work   — 7 kaynak: Breese (1998), Si&Jin (2003), Koren (2009),
+                   Sarwar (2001), Herlocker (2004), Harper (2015), Olmo (2008)
+  Proposed       — NBCF matematigi, log-space, temporal decay, Top-K seçimi,
+    Approach       hibrit birleştirme, confidence skorlama
+  Experimental   — Train/test split, evaluation subsets, hyperparameters,
+    Setup          metrik tanımları
+  Performance    — Genel sonuçlar + tablo, kullanıcı grubu analizi,
+    Analysis       confidence analizi, alpha duyarlılığı, latency
+  Conclusion     — Kazanımlar, sınırlılıklar, gelecek çalışmalar
+  References     — 7 akademik kaynak düzgün format ile
+
+  Görseller: Tüm 9 figür ve 7 tablo ilgili bölümlere yerleştirildi.
+  Sayfa sayısı: ~20-25 sayfa (görsellerle birlikte)
+
+── REPORT_2_Final.docx ─────────────────────────────────────────────
+  Hocanın istediği: "midterm ile final arasındaki farkların 1 sayfalık özeti"
+
+  İçerik:
+  1. Overview — Değişikliklerin genel çerçevesi (2 paragraf)
+  2. Algorithm Changes
+     2.1 Top-K Neighborhood Selection — problem, çözüm, etki
+     2.2 Confidence Score Fixed — neden bozuktu, ne değişti, etkisi
+  3. Evaluation Changes
+     3.1 RMSE metriği
+     3.2 Kullanıcı grubu değerlendirmesi
+     3.3 Alpha duyarlılık analizi
+     3.4 Confidence threshold sweep
+  4. Metric Comparison Table — midterm vs final sayısal karşılaştırma
+  5. Output Changes Table — figür/tablo sayısı, model sayısı, metrikler
+
+  Not: 1 sayfa olması isteniyor ama içerik biraz daha fazla çıktı.
+       Yazı boyutunu küçülterek veya bölümleri kısaltarak 1 sayfaya
+       sığdırabilirsiniz.
+
+── REPORT_3_Final.docx ─────────────────────────────────────────────
+  Hocanın istediği: "kodu satır satır ve bölüm bölüm açıkla +
+                     her çıktı bölümünü açıkla"
+
+  İçerik:
+  Overview       — Scriptin 9 bölümü hakkında genel açıklama
+  Section 1      — Import kütüphaneleri satır satır + global sabitler
+  Section 2      — Veri yükleme, train/test split, sözlük yapısı,
+                   frozenset precomputation [YENİ açıklandı]
+  Section 3      — Tüm orijinal fonksiyonlar: prior, likelihood,
+                   normalize, ub_score, ib_score, temporal fonksiyonlar
+  Section 4      — [YENİ] topk_items_for_ub, topk_users_for_ib,
+                   confidence_maxprob, hybrid_topk_temporal
+  Section 5      — Ana değerlendirme döngüsü: RMSE [YENİ], confidence_max [YENİ]
+  Section 6      — [YENİ] Kullanıcı grubu değerlendirmesi
+  Section 7      — [YENİ] Alpha duyarlılık analizi
+  Section 8      — Latency ölçümü
+  Section 9      — Her çıktının açıklaması:
+                   Tables 1-5, Figures 1-9, Table 6, Table 7
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BÖLÜM 5 — DOSYA YAPISI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  report/final/
+  ├── nbcf_final.py              — Ana kod dosyası
+  ├── generate_reports.py        — Raporları üreten script (teslim edilmeyecek)
+  ├── Report_1_Final.docx        — Akademik makale (görseller dahil)
+  ├── Report_2_Final.docx        — Midterm vs final farkları
+  ├── Report_3_Final.docx        — Satır satır kod açıklaması
+  ├── INFO_REPORT.txt            — Bu belge (teslim edilmeyecek, referans)
+  ├── README.md                  — Kurulum ve çalıştırma adımları (HAZIRLANACAK)
+  ├── ml-1m/                     — Dataset
+  │   ├── ratings.dat
+  │   ├── movies.dat
+  │   └── users.dat
+  └── outputs/                   — Üretilen görsel çıktılar
+      ├── figure1_confusion_matrices.png
+      ├── figure2_mae_rmse_comparison.png
+      ├── figure3_per_class_f1.png
+      ├── figure4_confidence.png
+      ├── figure5_rating_distribution.png
+      ├── figure6_sustainability.png
+      ├── figure7_user_groups.png      [YENİ]
+      ├── figure8_confidence_sweep.png [YENİ]
+      ├── figure9_alpha_sensitivity.png [YENİ]
+      ├── table1_rating_matrix.png
+      ├── table2_3_priors_likelihood.png
+      ├── table4_5_ib_scores.png
+      ├── table6_user_groups.png       [YENİ]
+      └── table7_full_metrics.png
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BÖLÜM 6 — TEKNİK NOTLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Neden IB hâlâ bu kadar kötü (MAE=2.33)?
+  IB, item i'nin TÜM birlikte puanlayıcılarını kullanır. Popüler filmler
+  için bu 2000+ kişidir. Çoğu kişi hedef kullanıcıyla hiç ortak film
+  izlememiştir → likelihood = alpha/(NUM_R×alpha) = 0.2 (uniform).
+  500 kişilik uniform likelihood log toplamı = 500 × log(0.2) = -800,
+  bu tüm sınıflar için eşit, dolayısıyla prior domine eder.
+  Prior çoğunlukla 4 veya 5 yönünde → model 4-5 tahmin eder →
+  1-3 puanlı filmler için büyük hata. Top-K IB bunu kısmen düzeltiyor
+  ama tam çözüm için Jaccard similarity veya cosine similarity gerekir.
+
+Neden eval seti küçük (1000)?
+  Her tahmin 14-35ms sürer. 200,000 test örneğinin tamamı ~80 dakika
+  isterdi. 1000 örnek ~2 dakika — pratikte makul bir denge.
+
+Temporal Lambda neden 1e-7?
+  ML-1M timestamps saniye cinsinden. 1 yıl ≈ 3.15×10^7 saniye.
+  λ=1e-7 ile: 1 yıllık rating ağırlığı = exp(-1e-7 × 3.15e7) ≈ 0.04
+  3 yıllık rating: exp(-1e-7 × 9.5e7) ≈ 0.09
+  Yani 1-3 yıllık ratingler ciddi şekilde ağırlığını kaybediyor.
