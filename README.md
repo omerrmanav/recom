@@ -18,7 +18,6 @@ Dataset is MovieLens-1M. Already included in the repo, no need to download anyth
 ## Setup
 
 ```bash
-cd report/final
 python3 -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
@@ -29,11 +28,10 @@ pip install -r requirements.txt
 ## Running
 
 ```bash
-cd report/final
 python nbcf_final.py
 ```
 
-Takes around 3–8 minutes. Outputs are saved to `report/final/outputs/`.
+Takes around 3–8 minutes. Outputs are saved to `outputs/`.
 
 ---
 
@@ -61,18 +59,16 @@ Takes around 3–8 minutes. Outputs are saved to `report/final/outputs/`.
 ## File Structure
 
 ```
-recommender/
+submission/
 ├── README.md
-├── report/
-│   └── final/
-│       ├── nbcf_final.py
-│       ├── requirements.txt
-│       ├── ml-1m/
-│       │   ├── ratings.dat
-│       │   ├── movies.dat
-│       │   └── users.dat
-│       ├── outputs/
-│       ├── Report_1_Final.pdf
-│       ├── Report_2_Final.pdf
-│       └── Report_3_Final.pdf
+├── nbcf_final.py
+├── requirements.txt
+├── ml-1m/
+│   ├── ratings.dat
+│   ├── movies.dat
+│   └── users.dat
+├── outputs/               (created when you run the script)
+├── Report_1_Final.pdf
+├── Report_2_Final.pdf
+└── Report_3_Final.pdf
 ```
