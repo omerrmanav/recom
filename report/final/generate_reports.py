@@ -8,6 +8,8 @@ from docx import Document
 from docx.shared import Pt, RGBColor, Inches, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
 import os
 
 # ─────────────────────────────────────────────────────────────────────
@@ -71,6 +73,27 @@ def insert_image(doc, path, width_cm=14):
         run.add_picture(path, width=Cm(width_cm))
     else:
         body(doc, f"[IMAGE NOT FOUND: {path}]")
+
+def add_toc(doc):
+    """Insert a Word TOC field. Open in Word and press Ctrl+A → F9 to update page numbers."""
+    heading(doc, "Table of Contents")
+    p = doc.add_paragraph()
+    run1 = p.add_run()
+    fc1 = OxmlElement('w:fldChar'); fc1.set(qn('w:fldCharType'), 'begin')
+    run1._r.append(fc1)
+    run2 = p.add_run()
+    it = OxmlElement('w:instrText'); it.set(qn('xml:space'), 'preserve')
+    it.text = ' TOC \\o "1-3" \\h \\z \\u '
+    run2._r.append(it)
+    run3 = p.add_run()
+    fc2 = OxmlElement('w:fldChar'); fc2.set(qn('w:fldCharType'), 'separate')
+    run3._r.append(fc2)
+    run4 = p.add_run('[ Open in Microsoft Word and press Ctrl+A, then F9 to populate page numbers. ]')
+    run4.font.name = 'Times New Roman'; run4.font.size = Pt(10); run4.italic = True
+    run5 = p.add_run()
+    fc3 = OxmlElement('w:fldChar'); fc3.set(qn('w:fldCharType'), 'end')
+    run5._r.append(fc3)
+    doc.add_page_break()
 
 def cover(doc, title, report_no, supervisor, students):
     for _ in range(4):
@@ -138,6 +161,8 @@ cover(doc1,
       "Report 1 — Final Project",
       SUPERVISOR, STUDENTS)
 
+add_toc(doc1)
+
 # ── Abstract ──────────────────────────────────────────────────────────
 heading(doc1, "Abstract")
 body(doc1,
@@ -151,7 +176,7 @@ body(doc1,
     "evidence to the K=30 most similar neighbors ranked by co-rater overlap, "
     "(2) RMSE as a complementary evaluation metric alongside MAE, and "
     "(3) stratified evaluation across three user activity groups to expose "
-    "cold-start behaviour. The final model (TopK+Temporal) achieves MAE = 0.798 "
+    "cold-start behavior. The final model (TopK+Temporal) achieves MAE = 0.798 "
     "and RMSE = 1.126 on the held-out test set, with a 59% latency reduction "
     "compared to the full-neighbourhood temporal baseline (34.8 ms → 14.3 ms "
     "per prediction). Confidence-filtered predictions covering 29.3% of the "
@@ -164,7 +189,7 @@ heading(doc1, "1. Introduction")
 body(doc1,
     "Online platforms such as streaming services and e-commerce sites offer "
     "millions of items, making manual discovery infeasible. Recommender systems "
-    "address this by predicting user preferences from historical behaviour. "
+    "address this by predicting user preferences from historical behavior. "
     "Collaborative Filtering (CF), the dominant paradigm, assumes that users "
     "who agreed in the past will agree again in the future, requiring no item "
     "metadata and scaling naturally with usage data.")
@@ -242,7 +267,7 @@ heading(doc1, "3. Proposed Approach")
 
 heading(doc1, "3.1 Naïve Bayes Collaborative Filtering", level=2)
 body(doc1,
-    "We find y ∈ {1,2,3,4,5} that maximises the posterior. Under the Naïve "
+    "We find y ∈ {1,2,3,4,5} that maximizes the posterior. Under the Naïve "
     "Bayes assumption, past ratings are conditionally independent given y. "
     "The user-based (UB) variant gives:")
 body(doc1,
@@ -333,7 +358,7 @@ simple_table(doc1,
 
 heading(doc1, "4.4 Evaluation Metrics", level=2)
 bullet(doc1, "MAE — Mean Absolute Error.")
-bullet(doc1, "RMSE — Root Mean Squared Error; penalises large errors more.")
+bullet(doc1, "RMSE — Root Mean Squared Error; penalizes large errors more.")
 bullet(doc1, "Macro Precision / Recall / F1 — per-class then averaged equally.")
 bullet(doc1, "Binary Confusion Matrix — Like/Dislike (rating ≥ 4 = Like).")
 bullet(doc1, "Coverage — fraction of predictions above confidence threshold τ.")
@@ -440,7 +465,7 @@ body(doc1,
     "remaining interpretable and training-free. The midterm version established "
     "a working hybrid NBCF with temporal decay and confidence scoring. The "
     "final version corrects the confidence degeneracy, introduces Top-K "
-    "neighborhood selection, adds RMSE, and reveals cold-start behaviour "
+    "neighborhood selection, adds RMSE, and reveals cold-start behavior "
     "through stratified evaluation.")
 body(doc1,
     "The most practically significant result is that Top-K selection reduces "
@@ -551,7 +576,7 @@ heading(doc2, "3. Evaluation Changes")
 heading(doc2, "3.1 RMSE Metric Added (New)", level=2)
 body(doc2,
     "The midterm reported only MAE. RMSE is the standard complementary metric "
-    "in recommender systems — it penalises large errors quadratically and "
+    "in recommender systems — it penalizes large errors quadratically and "
     "gives a different view of model quality. All final results report both "
     "MAE and RMSE.")
 
@@ -560,7 +585,7 @@ body(doc2,
     "The midterm evaluated only users with 20–30 training ratings, representing "
     "a narrow slice of the user population. The final version tests three groups: "
     "Light (10–30 ratings, n=1,241 users), Medium (31–100, n=2,361), "
-    "Heavy (>100, n=2,438). This reveals the cold-start behaviour — lighter "
+    "Heavy (>100, n=2,438). This reveals the cold-start behavior — lighter "
     "users consistently have higher error — and shows exactly where Top-K "
     "helps and where it hurts.")
 
@@ -644,7 +669,7 @@ for line, expl in [
     ("import matplotlib.pyplot as plt",
      "Creates all figures and saves them as PNG files."),
     ("import seaborn as sns",
-     "Draws the confusion-matrix heatmaps with colour gradients."),
+     "Draws the confusion-matrix heatmaps with color gradients."),
     ("import math",
      "math.log() and math.exp() for the log-space probability calculations."),
     ("import time",
@@ -724,12 +749,12 @@ heading(doc3, "3.3 Log-Space Scoring", level=2)
 code(doc3, "def normalize_log_scores(log_scores_dict):")
 body(doc3,
     "Log-sum-exp trick: subtract the maximum log-score before calling exp() "
-    "to avoid overflow/underflow, then divide by the sum to normalise to a "
+    "to avoid overflow/underflow, then divide by the sum to normalize to a "
     "valid probability distribution that sums to 1.", sa=4)
 code(doc3, "def ub_score(u, i, a=ALPHA):")
 body(doc3,
     "For each class y, accumulates log P(y|i) + Σ_j log P(r_{u,j}=k|y) over "
-    "ALL past items j of user u, then normalises. The 'a' parameter allows "
+    "ALL past items j of user u, then normalizes. The 'a' parameter allows "
     "alpha sensitivity analysis to override the default.", sa=4)
 code(doc3, "def ib_score(u, i, a=ALPHA):")
 body(doc3, "Same structure but iterates over ALL co-raters of item i instead.", sa=4)
@@ -836,102 +861,172 @@ body(doc3,
     "tail latency — the worst-case time for 95% of predictions.", sa=4)
 
 heading(doc3, "Section 9 — Output Explanations")
-heading(doc3, "Tables 1–5", level=2)
 body(doc3,
-    "Table 1: Small extract of the rating matrix. Rows = users, columns = items. "
-    "'•' = missing rating. Shows the sparsity of the dataset. "
-    "Tables 2–3: Prior probabilities and user-based likelihoods for a "
-    "specific user/item pair. Values close to 0.2 indicate little data. "
-    "Tables 4–5: Item-based likelihoods and the full score table for all "
-    "nine model variants. The asterisk (*) marks the predicted class "
-    "(argmax of the probability distribution).", sa=4)
+    "All figures and tables are generated by Sections 5–8 of nbcf_final.py and written "
+    "to the outputs/ directory. Each output is reproduced below with a technical "
+    "interpretation of what it reveals about model behavior.")
+
+heading(doc3, "Tables 1–5 — Algorithm Walkthrough", level=2)
+body(doc3,
+    "Tables 1–5 provide a step-by-step trace of the NBCF computation for a concrete "
+    "user–item pair sampled from ML-1M. Table 1 renders a rating matrix excerpt that "
+    "illustrates the 95.53% sparsity structure: missing entries (marked '•') dominate "
+    "every row and column. Tables 2 and 3 display the Laplace-smoothed prior probabilities "
+    "P(y|i) and user-based conditional likelihoods P(r_{u,j}=k | y, i) for the target pair. "
+    "Likelihood values near 0.2 indicate that no co-occurrence observations exist between "
+    "item j and rating class y, causing the estimate to revert toward the uniform baseline "
+    "introduced by the α=0.01 smoothing term. Tables 4 and 5 present the analogous "
+    "item-based quantities and the full posterior score comparison across all nine model "
+    "variants; the asterisk (*) marks the MAP prediction for each variant.", sa=6)
+insert_image(doc3, OUT + "table1_rating_matrix.png", width_cm=13)
+caption(doc3, "Table 1. Rating matrix excerpt (ML-1M). Missing entries shown as '•'.")
+insert_image(doc3, OUT + "table2_3_priors_likelihood.png", width_cm=13)
+caption(doc3, "Tables 2–3. Laplace-smoothed prior probabilities and UB likelihoods for the running example.")
+insert_image(doc3, OUT + "table4_5_ib_scores.png", width_cm=13)
+caption(doc3, "Tables 4–5. IB likelihoods and full posterior score table for all nine model variants.")
 
 heading(doc3, "Figure 1 — Confusion Matrices", level=2)
 body(doc3,
-    "Four heatmaps for TopK+Temporal: (a) 5-class raw counts — how many "
-    "predictions of each pair (actual, predicted) occurred; (b) row-normalised "
-    "5-class — per-class accuracy (diagonal = correctly predicted fraction); "
-    "(c) binary raw counts — actual Like/Dislike vs predicted Like/Dislike; "
-    "(d) binary row-normalised. A strong diagonal in (b) and (d) means "
-    "the model classifies correctly; off-diagonal indicates systematic bias.", sa=4)
+    "The four panels characterize the classification behavior of the TopK+Temporal model. "
+    "Panels (a) and (b) present the 5-class confusion matrix in raw counts and row-normalized "
+    "form; panels (c) and (d) collapse the task to a binary Like (rating ≥ 4) / Dislike (rating < 4) "
+    "decision. The normalized diagonal quantifies per-class recall. Systematic off-diagonal "
+    "concentration in rows 1 and 2 reflects the modal-class bias inherent in NBCF: training "
+    "evidence for rare classes is sparse, causing the model to predict the high-frequency "
+    "classes (3, 4) more often than the ground truth warrants. The binary confusion matrix "
+    "(panels c–d) shows substantially better discrimination, consistent with the higher "
+    "binary F1 reported in Table 7.", sa=6)
+insert_image(doc3, OUT + "figure1_confusion_matrices.png", width_cm=13)
+caption(doc3, "Figure 1. Confusion matrices for TopK+Temporal: 5-class and binary (Like/Dislike).")
 
 heading(doc3, "Figure 2 — MAE and RMSE Comparison", level=2)
 body(doc3,
-    "Bar charts for all five models. RMSE bars are taller than MAE because "
-    "it penalises large errors quadratically. The IB model's bars are "
-    "dramatically higher, showing the effect of uninformative co-raters "
-    "on popular items. The TopK+Temporal bar nearly matches Temporal.", sa=4)
+    "The grouped bar chart presents MAE (left panel) and RMSE (right panel) for all five model "
+    "variants. RMSE bars consistently exceed their MAE counterparts because RMSE penalizes "
+    "large errors quadratically, amplifying the contribution of outlier predictions. The "
+    "pronounced gap between UB (MAE=0.861) and IB (MAE=2.335) demonstrates the noise "
+    "introduced by uninformative co-raters on popular items — a problem that Top-K "
+    "selection mitigates for UB but only partially resolves for the IB component. "
+    "The near-identical bars for Temporal and TopK+Temporal confirm that the K=30 "
+    "approximation preserves accuracy while reducing latency by 59%.", sa=6)
+insert_image(doc3, OUT + "figure2_mae_rmse_comparison.png", width_cm=13)
+caption(doc3, "Figure 2. MAE and RMSE comparison across all five NBCF variants.")
 
 heading(doc3, "Figure 3 — Per-Class F1", level=2)
 body(doc3,
-    "Three grouped bars per rating class (1–5). F1 is highest for class 4 "
-    "because it is the most common rating in MovieLens-1M (~38% of ratings), "
-    "giving the model more training examples for that class. "
-    "Classes 1 and 2 are rare and have near-zero F1 for all models.", sa=4)
+    "The grouped bars represent per-class F1 for the Hybrid, Temporal, and TopK+Temporal "
+    "variants across all five rating classes. F1 is highest for class 4 because it accounts "
+    "for approximately 38% of ML-1M training ratings, providing the densest likelihood "
+    "estimates for that class. Classes 1 and 2 yield near-zero F1 across all variants — "
+    "a direct consequence of class imbalance combined with the Laplace prior pulling "
+    "probability mass away from unseen rating classes rather than toward them. The marginal "
+    "differences between Temporal and TopK+Temporal fall within the variance expected for "
+    "a 1,000-sample evaluation.", sa=6)
+insert_image(doc3, OUT + "figure3_per_class_f1.png", width_cm=13)
+caption(doc3, "Figure 3. Per-class F1 scores for the three main NBCF variants.")
 
 heading(doc3, "Figure 4 — Confidence Analysis", level=2)
 body(doc3,
-    "Left (Figure 4a): histogram of max-probability confidence scores. "
-    "Right-skewed: most predictions have moderate confidence (0.3–0.6). "
-    "The dashed line marks the operating threshold τ=0.45. "
-    "Right (Figure 4b): mean MAE per confidence bucket — confirms that "
-    "higher confidence correlates with lower error.", sa=4)
+    "Panel (a) plots the distribution of max-probability confidence scores over the 1,000-sample "
+    "test set. The right-skewed shape — peaked in the 0.30–0.55 range — reflects the intrinsic "
+    "uncertainty of 5-class rating prediction; scores near 1.0 are rare and indicate that a "
+    "single class strongly dominates the posterior. The dashed vertical line marks the operating "
+    "threshold τ=0.45. Panel (b) plots mean MAE per confidence bucket, revealing a monotonic "
+    "relationship: higher confidence corresponds to lower prediction error. This confirms that "
+    "the max-probability measure functions as a meaningful calibrated uncertainty proxy and "
+    "justifies its use as an abstention criterion.", sa=6)
+insert_image(doc3, OUT + "figure4_confidence.png", width_cm=13)
+caption(doc3, "Figure 4. Confidence score distribution (left) and MAE per confidence bucket (right).")
 
 heading(doc3, "Figure 5 — Rating Distribution", level=2)
 body(doc3,
-    "Left (Figure 5a): actual vs predicted rating counts. All models over-predict "
-    "class 4 because it dominates the training distribution. "
-    "Right (Figure 5b): mean absolute error per actual rating class. "
-    "Extreme classes (1 and 5) have the highest MAE — they are rare "
-    "and the model tends to predict toward the modal class.", sa=4)
+    "Panel (a) compares the empirical rating distribution of the test set against the "
+    "predicted distribution for all three main variants. Every model over-predicts class 4, "
+    "mirroring the training distribution imbalance — the NBCF posterior is pulled toward "
+    "the empirical mode rather than fitting the full distribution shape. Panel (b) plots "
+    "per-class MAE, showing that extreme ground-truth classes (1 and 5) carry the highest "
+    "individual errors. This is an expected consequence of the smoothed prior: when actual "
+    "ratings are far from the modal class, the posterior's attraction to that mode inflates "
+    "the absolute error.", sa=6)
+insert_image(doc3, OUT + "figure5_rating_distribution.png", width_cm=13)
+caption(doc3, "Figure 5. Actual vs predicted rating distribution (left) and per-class MAE (right).")
 
 heading(doc3, "Figure 6 — Latency and Throughput", level=2)
 body(doc3,
-    "Left (Figure 6a): overlapping histograms of per-prediction latency. "
-    "TopK+Temporal (green) has a narrower, left-shifted distribution — "
-    "shorter and less variable than Temporal. "
-    "Right (Figure 6b): predictions per second vs user history depth. "
-    "TopK throughput is more stable because the inner loop is capped at K=30, "
-    "making latency nearly independent of how many past items a user has.", sa=4)
+    "Panel (a) overlays per-prediction latency histograms for the Temporal and "
+    "TopK+Temporal models across 1,000 predictions. The TopK+Temporal distribution "
+    "is shifted left (lower median) and narrower (lower variance), reflecting the O(K) "
+    "bound on the inner scoring loop. Panel (b) plots predictions per second against "
+    "user history depth. Full Temporal throughput degrades as history grows because the "
+    "loop iterates over all past items; TopK+Temporal throughput remains stable at K=30 "
+    "operations per prediction regardless of total item count, decoupling latency from "
+    "user activity level.", sa=6)
+insert_image(doc3, OUT + "figure6_sustainability.png", width_cm=13)
+caption(doc3, "Figure 6. Per-prediction latency distribution (left) and throughput vs history depth (right).")
 
 heading(doc3, "Figure 7 — User Group Performance [NEW]", level=2)
 body(doc3,
-    "Side-by-side bar charts for Light, Medium, and Heavy user groups. "
-    "Left: MAE; Right: RMSE. Orange = Temporal (midterm model), "
-    "Green = TopK+Temporal (final model). The performance improvement of "
-    "TopK is concentrated in the Medium group; for Light users there is "
-    "no change (K is never binding); for Heavy users performance slightly "
-    "worsens (K=30 truncates useful history).", sa=4)
+    "The bar charts decompose MAE (left) and RMSE (right) by user activity group for "
+    "the Temporal and TopK+Temporal models. Light users (10–30 ratings) are unaffected "
+    "by K=30 because their history never exceeds the cap. Medium users (31–100) benefit "
+    "from Top-K neighborhood selection — a 6.2% MAE reduction — because the top-30 "
+    "most-overlapping neighbors provide cleaner likelihood estimates than the full, "
+    "unfiltered history. Heavy users (>100 ratings) incur a slight regression "
+    "(MAE 0.740 → 0.777) because K=30 occasionally discards genuinely informative "
+    "neighbors beyond rank 30, suggesting that adaptive K scaling with user activity "
+    "level is a productive direction for future work.", sa=6)
+insert_image(doc3, OUT + "figure7_user_groups.png", width_cm=13)
+caption(doc3, "Figure 7. MAE and RMSE by user activity group (Light / Medium / Heavy).")
 
 heading(doc3, "Figure 8 — Confidence Threshold Sweep [NEW]", level=2)
 body(doc3,
-    "Dual-axis line chart: blue line (left axis) = coverage percentage "
-    "as the threshold τ rises from 0.20 to 0.95; orange dashed line "
-    "(right axis) = filtered MAE of the accepted predictions. "
-    "As τ increases: coverage falls (fewer predictions accepted) and "
-    "filtered MAE also falls (only the most confident, most accurate "
-    "predictions remain). The operating point τ=0.45 is marked.", sa=4)
+    "The dual-axis chart plots coverage (fraction of predictions accepted; blue, left axis) "
+    "and filtered MAE over accepted predictions (orange dashed, right axis) as the confidence "
+    "threshold τ varies from 0.20 to 0.95. At the operating point τ=0.45, coverage is 29.3% "
+    "and filtered MAE is 0.706 — an 11.5% improvement over the unfiltered MAE of 0.798. "
+    "Both curves decrease monotonically as τ rises, confirming that the confidence measure "
+    "is well-calibrated: higher-confidence predictions are systematically more accurate. "
+    "The smooth trade-off curve allows the threshold to be tuned for specific deployment "
+    "requirements balancing coverage against prediction quality.", sa=6)
+insert_image(doc3, OUT + "figure8_confidence_sweep.png", width_cm=13)
+caption(doc3, "Figure 8. Coverage–MAE trade-off as the confidence threshold τ is swept from 0.20 to 0.95.")
 
 heading(doc3, "Figure 9 — Alpha Sensitivity [NEW]", level=2)
 body(doc3,
-    "Log-scale x-axis with five α values. Blue = UB without temporal; "
-    "Orange = UB with temporal. The dashed vertical line marks the default "
-    "α=0.01. UB (blue) shows a U-shape with a minimum near α=0.1. "
-    "UB+Temporal (orange) is essentially flat — temporal weighting "
-    "absorbs the regularisation effect of α, making the model robust.", sa=4)
+    "The log-scaled x-axis spans five values of the Laplace smoothing parameter α. "
+    "The UB (no temporal; blue) curve exhibits a U-shaped profile with a minimum near "
+    "α=0.1 (MAE=0.845): both under-smoothing (α=0.001, overfitting sparse likelihoods) "
+    "and over-smoothing (α=1.0, collapsing toward the uniform prior) degrade accuracy. "
+    "The UB+Temporal (orange) curve is nearly flat across α ≥ 0.01 (MAE ≈ 0.855), "
+    "demonstrating that exponential recency weighting absorbs the variance otherwise "
+    "regularized by α, making the temporal model robust to the choice of smoothing "
+    "hyperparameter. The dashed vertical line marks the default α=0.01.", sa=6)
+insert_image(doc3, OUT + "figure9_alpha_sensitivity.png", width_cm=13)
+caption(doc3, "Figure 9. MAE vs Laplace smoothing parameter α (log scale) for UB and UB+Temporal.")
 
 heading(doc3, "Table 6 — User Group Metrics [NEW]", level=2)
 body(doc3,
-    "Numeric version of Figure 7. Columns: user group label, sample size n, "
-    "MAE and RMSE for both Temporal and TopK+Temporal. "
-    "Confirms the pattern seen in the figure with exact values.", sa=4)
+    "Numeric companion to Figure 7. Reports sample size n, MAE, and RMSE for each "
+    "activity group under both the Temporal and TopK+Temporal models. The table enables "
+    "precise quantification of the group-level performance differences described above. "
+    "The monotonically decreasing MAE from Light to Heavy users quantifies the cold-start "
+    "effect: additional historical ratings reduce prediction uncertainty by enriching the "
+    "likelihood estimates with more co-occurrence evidence.", sa=6)
+insert_image(doc3, OUT + "table6_user_groups.png", width_cm=13)
+caption(doc3, "Table 6. MAE and RMSE broken down by user activity group.")
 
 heading(doc3, "Table 7 — Full Metrics Summary (Updated)", level=2)
 body(doc3,
-    "Summary table for all five models. New compared to midterm: RMSE column "
-    "and the TopK+Temporal row. Coverage is only shown for the final model "
-    "because confidence filtering is only applied to TopK+Temporal predictions. "
-    "Precision, Recall, and F1 are computed macro-averaged (equal weight per class).", sa=4)
+    "Comprehensive evaluation table for all five NBCF variants. Columns follow the standard "
+    "recommender systems reporting format: MAE, RMSE, macro precision, recall, and F1. "
+    "Coverage is reported only for TopK+Temporal because the confidence-based abstention "
+    "mechanism is applied exclusively to that variant. Precision, recall, and F1 are "
+    "macro-averaged (equal weight per class), making them sensitive to performance on "
+    "rare classes. The gap between macro F1 (0.27–0.37) and single-class accuracy on "
+    "the modal class reflects the class-imbalance challenge described in the Figure 3 "
+    "analysis.", sa=6)
+insert_image(doc3, OUT + "table7_full_metrics.png", width_cm=13)
+caption(doc3, "Table 7. Full metric comparison table for all five NBCF variants.")
 
 doc3.save('Report_3_Final.docx')
 print("✓ Report_3_Final.docx")

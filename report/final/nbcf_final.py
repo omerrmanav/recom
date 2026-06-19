@@ -555,7 +555,7 @@ axes[0, 0].set_ylabel("Actual"); axes[0, 0].set_xlabel("Predicted")
 
 sns.heatmap(cm_norm, annot=True, fmt='.1%', cmap='Blues', cbar=True,
             xticklabels=R_values, yticklabels=R_values, ax=axes[0, 1])
-axes[0, 1].set_title("b) 5-Class — Normalised", fontsize=10)
+axes[0, 1].set_title("b) 5-Class — Normalized", fontsize=10)
 axes[0, 1].set_ylabel("Actual"); axes[0, 1].set_xlabel("Predicted")
 
 sns.heatmap(cm_bin, annot=True, fmt='d', cmap='Oranges', cbar=True,
@@ -567,7 +567,7 @@ axes[1, 0].set_ylabel("Actual"); axes[1, 0].set_xlabel("Predicted")
 sns.heatmap(cm_bin_norm, annot=True, fmt='.1%', cmap='Oranges', cbar=True,
             xticklabels=['Not Like', 'Like'], yticklabels=['Not Like', 'Like'],
             ax=axes[1, 1])
-axes[1, 1].set_title("d) Binary — Normalised", fontsize=10)
+axes[1, 1].set_title("d) Binary — Normalized", fontsize=10)
 axes[1, 1].set_ylabel("Actual"); axes[1, 1].set_xlabel("Predicted")
 
 plt.tight_layout()
