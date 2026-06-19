@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,6 +11,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score
 import warnings
 warnings.filterwarnings('ignore')
+
+os.makedirs('outputs', exist_ok=True)
 
 plt.rcParams.update({'font.size': 10, 'font.family': 'sans-serif'})
 
