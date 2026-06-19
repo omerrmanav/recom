@@ -1,6 +1,6 @@
 # NBCF Recommender System — Final Project
 
-**Course:** Recommender Systems  
+**Course:** Recommender Systems 
 **Group Members:**
 - Ömer MANAV — 210209003
 - Kaan Bahadır SAĞRA — 210201011
@@ -60,17 +60,6 @@ Takes around 3–8 minutes. Outputs are saved to `report/final/outputs/`.
 
 ---
 
-## Regenerating Reports
-
-```bash
-cd report/final
-python generate_reports.py
-```
-
-This recreates Report_1_Final.docx, Report_2_Final.docx, Report_3_Final.docx and INFO_REPORT.txt.
-
----
-
 ## File Structure
 
 ```
@@ -79,7 +68,6 @@ recommender/
 ├── report/
 │   └── final/
 │       ├── nbcf_final.py
-│       ├── generate_reports.py
 │       ├── requirements.txt
 │       ├── ml-1m/
 │       │   ├── ratings.dat
