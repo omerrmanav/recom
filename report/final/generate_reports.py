@@ -542,115 +542,52 @@ cover(doc2,
       "Report 2 — Midterm vs. Final: Summary of Differences",
       SUPERVISOR, STUDENTS)
 
-heading(doc2, "1. Overview of Changes")
+heading(doc2, "Overview")
 body(doc2,
-    "The final project substantially improves upon the midterm submission in "
-    "three algorithmic dimensions and two evaluation dimensions. This report "
-    "documents every change, explains the motivation behind each decision, "
-    "and quantifies the measured impact where applicable.")
-body(doc2,
-    "The midterm implemented the core NBCF algorithm with two novel "
-    "contributions — temporal decay weighting and confidence-aware prediction. "
-    "While the temporal model achieved the best MAE (0.792), the confidence "
-    "system was non-functional (0% coverage), the evaluation was restricted to "
-    "a single narrow user group, and the IB variant showed abnormally high error "
-    "with no analysis of why. The final version addresses all of these issues.")
+    "The final submission extends the midterm NBCF implementation with two algorithmic "
+    "improvements and three evaluation additions. The midterm's temporal hybrid achieved "
+    "MAE = 0.792 but had a non-functional confidence system (0% coverage) and evaluated "
+    "only a single narrow user group. The final version addresses both issues and adds "
+    "RMSE, stratified user-group analysis, and an alpha sensitivity study.", sa=6)
 
-heading(doc2, "2. Algorithm Changes")
-
-heading(doc2, "2.1 Top-K Neighborhood Selection (New)", level=2)
-body(doc2,
-    "Problem in midterm: The user-based and item-based score functions iterated "
-    "over ALL past items of a user (UB) or ALL co-raters of an item (IB). "
-    "For popular items with 2,000+ co-raters, most co-raters share few items "
-    "with the target user and contribute nearly identical, uninformative "
-    "likelihood values — adding noise rather than signal to the prediction.")
-body(doc2,
-    "Change in final: Before scoring, we rank candidate neighbors by co-rater "
-    "overlap (for UB: |users(i) ∩ users(j)|; for IB: |items(u) ∩ items(v)|) "
-    "and keep only the top K=30. A precomputed frozenset per item/user makes "
-    "each overlap computation O(K) via Python's native set intersection.")
-body(doc2,
-    "Impact: (1) Latency dropped 59% — from 34.8 ms to 14.3 ms per prediction. "
-    "(2) MAE improved 6.2% for medium-activity users (31–100 ratings). "
-    "(3) Heavy users (>100 ratings) showed a slight regression (MAE 0.740→0.777) "
-    "because K=30 occasionally discards useful neighbors — suggesting adaptive K "
-    "as a future improvement.")
-
-heading(doc2, "2.2 Confidence Score — Fixed (Updated)", level=2)
-body(doc2,
-    "Problem in midterm: The entropy-based confidence function returned "
-    "values close to zero for every prediction, yielding 0% coverage at "
-    "threshold τ=0.30. Root cause: the geometric hybrid mixing uses exponents "
-    "w_UB = 1/(1+|I_u|) and w_IB = 1/(1+|U_i|), which are both ≈ 0.04 for "
-    "medium users. Any value p raised to the power 0.04 is very close to 1, "
-    "so all five class probabilities collapse to nearly equal values, giving "
-    "maximum entropy and minimum confidence.")
-body(doc2,
-    "Change in final: We replaced the entropy measure with max-probability "
-    "confidence — confidence = max_y P(y|u,i) — applied to the UB-Temporal "
-    "component scores before geometric mixing. This measure is bounded in "
-    "[0.2, 1.0] for five classes and directly reflects how peaked the "
-    "UB-Temporal distribution is.")
-body(doc2,
-    "Impact: Coverage at τ=0.45 is now 29.3% (vs 0% in midterm). High-confidence "
-    "predictions achieve filtered MAE = 0.706, which is 11.5% better than the "
-    "overall MAE of 0.798, confirming that the confidence score is genuinely "
-    "informative and usable for abstention.")
-
-heading(doc2, "3. Evaluation Changes")
-
-heading(doc2, "3.1 RMSE Metric Added (New)", level=2)
-body(doc2,
-    "The midterm reported only MAE. RMSE is the standard complementary metric "
-    "in recommender systems — it penalizes large errors quadratically and "
-    "gives a different view of model quality. All final results report both "
-    "MAE and RMSE.")
-
-heading(doc2, "3.2 Stratified User Group Evaluation (New)", level=2)
-body(doc2,
-    "The midterm evaluated only users with 20–30 training ratings, representing "
-    "a narrow slice of the user population. The final version tests three groups: "
-    "Light (10–30 ratings, n=1,241 users), Medium (31–100, n=2,361), "
-    "Heavy (>100, n=2,438). This reveals the cold-start behavior — lighter "
-    "users consistently have higher error — and shows exactly where Top-K "
-    "helps and where it hurts.")
-
-heading(doc2, "3.3 Alpha Sensitivity Analysis (New)", level=2)
-body(doc2,
-    "The midterm used α=0.01 without validation. The final tests α ∈ "
-    "{0.001, 0.01, 0.1, 0.5, 1.0} and shows that the temporal variant is "
-    "almost entirely insensitive to α (MAE constant at 0.855 for α ≥ 0.01), "
-    "while the non-temporal UB has a sweet spot near α=0.1 (MAE=0.845).")
-
-heading(doc2, "3.4 Confidence Threshold Sweep (New)", level=2)
-body(doc2,
-    "In addition to reporting a single threshold, the final version sweeps τ "
-    "from 0.20 to 0.95 and plots the coverage–MAE trade-off curve (Figure 8). "
-    "This allows the reader to choose an operating point that balances recall "
-    "and precision for their application.")
-
-heading(doc2, "4. Metric Comparison: Midterm vs Final")
+heading(doc2, "Algorithm Changes")
 simple_table(doc2,
-    ["Model", "MAE\nMidterm", "MAE\nFinal", "RMSE\nFinal", "Coverage\nFinal"],
-    [["UB",                   "0.8610","0.8610","1.2518","—"],
-     ["IB",                   "2.3350","2.3350","2.6384","—"],
-     ["Hybrid",               "1.1020","1.1020","1.4953","—"],
-     ["Hybrid+Temporal",      "0.7920","0.7920","1.1234","—"],
-     ["TopK+Temporal [NEW]",  "—",     "0.7980","1.1261","29.3%"],
-     ["Confidence coverage",  "0.0%",  "29.3%", "—",    "@ τ=0.45"]],
-    col_widths=[4.5, 2.5, 2.5, 2.5, 2.8])
+    ["Change", "Description", "Impact"],
+    [
+        ["Top-K Neighbor\nSelection (NEW)",
+         "Candidates ranked by co-rater overlap\n(|users(i)∩users(j)| for UB;\n"
+         "|items(u)∩items(v)| for IB).\nTop K=30 retained; rest discarded.",
+         "Latency: 34.8ms → 14.3ms (−59%)\n"
+         "MAE medium users: 0.803 → 0.753 (−6.2%)\n"
+         "MAE heavy users: 0.740 → 0.777 (+slight)"],
+        ["Confidence Score\nFixed (UPDATED)",
+         "Entropy-based measure replaced with\n"
+         "max-probability: conf = max P(y|u,i)\n"
+         "applied to UB-Temporal scores before\ngeometric hybrid mixing.",
+         "Coverage: 0% → 29.3% (at τ=0.45)\n"
+         "Filtered MAE: 0.706 (−11.5% vs overall)"],
+    ],
+    col_widths=[3.8, 6.2, 5.5])
 
-heading(doc2, "5. Output Changes")
+heading(doc2, "Evaluation Changes")
 simple_table(doc2,
-    ["Item", "Midterm", "Final"],
-    [["Figures",        "6",                         "9 (3 new, 2 updated)"],
-     ["Tables",         "5 (Tables 1–5, Table 7)",   "7 (+ Table 6, updated Table 7)"],
-     ["Models compared","4 (UB, IB, Hybrid, Temp.)", "5 (+ TopK+Temporal)"],
-     ["Metrics",        "MAE, P, R, F1, Coverage",   "+ RMSE"],
-     ["Eval subsets",   "1 (20–30 rating users)",    "3 user groups + alpha sweep"],
-     ["Code size",      "~575 lines",                "~480 lines core + new sections"]],
-    col_widths=[4, 5.5, 6])
+    ["Addition", "Midterm", "Final"],
+    [["RMSE metric",         "Not reported",              "Added alongside MAE"],
+     ["User group eval",     "20–30 rating users only",   "Light / Medium / Heavy (300 each)"],
+     ["Alpha sensitivity",   "α=0.01 fixed",              "5 values: 0.001 – 1.0"],
+     ["Confidence sweep",    "Single threshold τ=0.30",   "Sweep τ=0.20 to 0.95 (Figure 8)"],
+     ["New figures/tables",  "6 figures, 5 tables",       "9 figures, 7 tables"]],
+    col_widths=[4.5, 5, 6])
+
+heading(doc2, "Metric Comparison")
+simple_table(doc2,
+    ["Model", "MAE", "RMSE", "Coverage", "Latency"],
+    [["UB",                   "0.861","1.252","—",    "—"],
+     ["IB",                   "2.335","2.638","—",    "—"],
+     ["Hybrid",               "1.102","1.495","—",    "28.3 ms"],
+     ["Hybrid + Temporal",    "0.792","1.123","0%",   "34.8 ms"],
+     ["TopK + Temporal [NEW]","0.798","1.126","29.3%","14.3 ms"]],
+    col_widths=[4.5, 2.2, 2.2, 2.5, 2.8])
 
 doc2.save('Report_2_Final.docx')
 print("✓ Report_2_Final.docx")
