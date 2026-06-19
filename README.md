@@ -30,10 +30,8 @@ pip install -r requirements.txt
 
 ```bash
 cd report/final
-MPLBACKEND=Agg python nbcf_final.py
+python nbcf_final.py
 ```
-
-`MPLBACKEND=Agg` is needed if you're running without a display (like a server). On a normal desktop you can just run `python nbcf_final.py`.
 
 Takes around 3–8 minutes. Outputs are saved to `report/final/outputs/`.
 
@@ -74,7 +72,7 @@ recommender/
 │       │   ├── movies.dat
 │       │   └── users.dat
 │       ├── outputs/
-│       ├── Report_1_Final.docx
-│       ├── Report_2_Final.docx
-│       └── Report_3_Final.docx
+│       ├── Report_1_Final.pdf
+│       ├── Report_2_Final.pdf
+│       └── Report_3_Final.pdf
 ```
